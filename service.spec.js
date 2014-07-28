@@ -22,7 +22,7 @@ describe('gwMgfService test', function () {
             fileReader.send();
         };
 
-        it('should parse data from Chubu University', inject(function (gwMgfService) {
+        it('should parse mgf data from Doerrstein MS/MS library', inject(function (gwMgfService) {
             readFile('test.mgf', gwMgfService, function(data) {
                 var metadataNames = [];
                 for(var i = 0; i < data.meta.length; i++) {
