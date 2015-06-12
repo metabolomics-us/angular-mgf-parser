@@ -281,4 +281,20 @@ angular.module('wohlgemuth.mgf.parser', []).
         this.convertFromData = function (data, callback) {
             return this.convertWithCallback(data, callback);
         };
+
+        /**
+         * counts the number of mass spectra in this library file
+         * @param data
+         * @returns {number}
+         */
+        this.countSpectra = function(data) {
+            var count = 0;
+            var pos = -1;
+
+            while((pos = data.indexOf('BEGIN IONS', pos + 1)) != -1) {
+                count++;
+            }
+
+            return count;
+        };
     });
