@@ -75,7 +75,7 @@ angular.module('wohlgemuth.mgf.parser', []).
          * simple trimming function
          */
         function trim(str) {
-            return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+            return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '').replace(/^"(.*)"$/, '$1');
         }
 
         /**
@@ -85,10 +85,29 @@ angular.module('wohlgemuth.mgf.parser', []).
          * @returns {*}
          */
         function inspectFields(match, spectra) {
+            var regexInchIKey = /.*([A-Z]{14}-[A-Z]{10}-[A-Z,0-9])+.*/;
+            var regexSmiles = /^([^J][0-9BCOHNSOPrIFla@+\-\[\]\(\)\\\/%=#$,.~&!]{6,})$/;
+
+            //if we contain an inchi key in any propterty of this field
+            if(regexInchIKey.exec(match[2])){
+                spectra.inchiKey = regexInchIKey.exec(match[2])[1];
+            }
+
+            //get an inchi
+            else if(match[1].toLowerCase() == 'inchi' || match[1].toLowerCase() == 'inchicode' || match[1].toLowerCase() == 'inchi code') {
+                spectra.inchi = trim(match[2]);
+            }
+
+            //get an inchi from a smile
+            else if(match[1].toLowerCase() == 'smiles' && regexSmiles.exec(match[2])){
+                spectra.smiles = regexSmiles.exec(match[2])[1];
+            }
+
             //comment fields have quite often additional infomation in them
-            if (match[1].toLowerCase() === 'comment') {
+            else if (match[1].toLowerCase() === 'comment') {
                 spectra = handleMetaDataField(match[2], spectra, /(\w+)\s*=\s*([0-9]*\.?[0-9]+)/g);
             }
+
             //can contain a lot of different id's in case of massbank generated msp files
             else if (match[1].toLowerCase() === 'searchid') {
                 spectra = handleMetaDataField(match[2], spectra, /(\w+\s?\w*)+:\s*([\w\d]+[ \w\d-]+)/g, "Database Identifier");
@@ -129,11 +148,8 @@ angular.module('wohlgemuth.mgf.parser', []).
             if (name === '') {
 
             }
-            else if (
-                name === 'num peaks' ||
-                name === 'retentionindex' ||
-                name === 'retentiontime'
-                ) {
+            else if (name === 'retentionindex' || name === 'retention index' ||
+                    name === 'retentiontime' || name === 'retention time') {
                 category = "spectral properties";
             }
 
@@ -143,7 +159,6 @@ angular.module('wohlgemuth.mgf.parser', []).
             }
 
             return category
-
         }
 
         /**
@@ -225,6 +240,7 @@ angular.module('wohlgemuth.mgf.parser', []).
 
             //go over all available blocks
             while ((block = blockRegEx.exec(buf)) != null) {
+
                 //contains the resulting spectrum object
                 var spectrum = {meta: []};
 
