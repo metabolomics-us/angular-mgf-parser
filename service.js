@@ -82,6 +82,8 @@ angular.module('wohlgemuth.mgf.parser', []).
          * inspects our metadata fields and does additional modifications, as required
          * @param match
          * @param spectra
+         *
+         *
          * @returns {*}
          */
         function inspectFields(match, spectra) {
@@ -129,7 +131,7 @@ angular.module('wohlgemuth.mgf.parser', []).
                             value: value,
                             category: findCategory(name)
                         }
-                    )
+                    );
                 }
             }
 
@@ -169,7 +171,7 @@ angular.module('wohlgemuth.mgf.parser', []).
          */
         function ignoreField(name, value) {
 
-            if (value.length == 0) {
+            if (trim(name) == '' || trim(value) == '') {
                 return true;
             }
 
@@ -218,7 +220,7 @@ angular.module('wohlgemuth.mgf.parser', []).
              * extracts the attributes like 'name' and 'value' from a found line
              * @type {RegExp}
              */
-            var regExAttributes = /([^=\s]+)=(.*)/g;
+            var regExAttributes = /\s*([^=\s]+)=(.*)\s/g;
 
             /**
              * first block captures meta data
@@ -240,6 +242,7 @@ angular.module('wohlgemuth.mgf.parser', []).
 
             //go over all available blocks
             while ((block = blockRegEx.exec(buf)) != null) {
+                block = block[1];
 
                 //contains the resulting spectrum object
                 var spectrum = {meta: []};
