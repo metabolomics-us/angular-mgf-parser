@@ -1,320 +1,328 @@
 /**
  * Created by Gert on 6/16/2014.
  */
-'use strict';
 
-angular.module('wohlgemuth.mgf.parser', []).
-    service('gwMgfService', function ($log) {
+(function () {
+	'use strict';
 
-        //reference to our service
-        var self = this;
+	angular.module('wohlgemuth.mgf.parser', [])
+		.service('gwMgfService', gwMgfService);
 
-        /**
-         * parses the name field content and modifies the spectra object accordingly
-         * @param value
-         * @param spectraObject
-         * @returns {*}
-         */
-        function handleName(value, spectra) {
+	gwMgfService.$inject = ['$log'];
 
-            //check if we have a Retention Index in the name field
-            var nameMatch = /(.+)_RI(.*)/.exec(value);
-            var nameCombinedWithInstruments = /\s*([:\w\d\s-]+);/.exec(value);
-            if (nameMatch) {
-                //sets the new name
-                spectra.name = trim(nameMatch[1]);
+	function gwMgfService($log) {
 
-                //adds it as retention index
-                spectra.meta.push(
-                    {name: 'Retention Index', value: trim(nameMatch[2]), category: findCategory('Retention Index')}
-                )
-            }
-            else if (nameCombinedWithInstruments) {
-                spectra.name = trim(nameCombinedWithInstruments[1]);
-            }
-            else {
+		//reference to our service
+		var self = this;
 
-                spectra.name = trim(value);
-            }
+		/**
+		 * parses the name field content and modifies the spectra object accordingly
+		 * @param value
+		 * @param spectraObject
+		 * @returns {*}
+		 */
+		function handleName(value, spectra) {
 
-            return spectra
-        }
+			//check if we have a Retention Index in the name field
+			var nameMatch = /(.+)_RI(.*)/.exec(value);
+			var nameCombinedWithInstruments = /\s*([:\w\d\s-]+);/.exec(value);
+			if (nameMatch) {
+				//sets the new name
+				spectra.name = trim(nameMatch[1]);
 
-        /**
-         * handles a given metadata field and might does additional modifcations
-         * @param value
-         * @param spectra
-         * @param regex regular expression, must provide 2 groups!
-         * @param category
-         * @returns {*}
-         */
-        function handleMetaDataField(value, spectra, regex, category) {
-            if (angular.isUndefined(category)) {
-                category = "none"
-            }
-            var extractValue = regex;
-            var match = extractValue.exec(value);
+				//adds it as retention index
+				spectra.meta.push(
+					{name: 'Retention Index', value: trim(nameMatch[2]), category: findCategory('Retention Index')}
+				)
+			}
+			else if (nameCombinedWithInstruments) {
+				spectra.name = trim(nameCombinedWithInstruments[1]);
+			}
+			else {
 
-            while (match != null) {
+				spectra.name = trim(value);
+			}
 
-                var name = trim(match[1]);
-                var parsedValue = trim(match[2]);
-                if (ignoreField(name, parsedValue) == false) {
-                    spectra.meta.push(
-                        {
-                            name: name, value: parsedValue, category: category
-                        }
-                    );
-                }
-                match = extractValue.exec(value);
-            }
-            return spectra;
-        }
+			return spectra
+		}
 
-        /**
-         * simple trimming function
-         */
-        function trim(str) {
-            return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '').replace(/^"(.*)"$/, '$1');
-        }
+		/**
+		 * handles a given metadata field and might does additional modifcations
+		 * @param value
+		 * @param spectra
+		 * @param regex regular expression, must provide 2 groups!
+		 * @param category
+		 * @returns {*}
+		 */
+		function handleMetaDataField(value, spectra, regex, category) {
+			if (angular.isUndefined(category)) {
+				category = "none"
+			}
+			var extractValue = regex;
+			var match = extractValue.exec(value);
 
-        /**
-         * inspects our metadata fields and does additional modifications, as required
-         * @param match
-         * @param spectra
-         *
-         *
-         * @returns {*}
-         */
-        function inspectFields(match, spectra) {
-            var regexInchIKey = /.*([A-Z]{14}-[A-Z]{10}-[A-Z,0-9])+.*/;
-            //var regexSmiles = /^([^J][0-9BCOHNSOPrIFla@+\-\[\]\(\)\\\/%=#$,.~&!]{6,})$/;
-            var regexSmiles = /^([^J][0-9A-Za-z@+\-\[\]\(\)\\\/%=#$,.~&!]{6,})$/;
+			while (match != null) {
 
-            //if we contain an inchi key in any propterty of this field
-            if(regexInchIKey.exec(match[2])){
-                spectra.inchiKey = regexInchIKey.exec(match[2])[1];
-            }
+				var name = trim(match[1]);
+				var parsedValue = trim(match[2]);
+				if (ignoreField(name, parsedValue) == false) {
+					spectra.meta.push(
+						{
+							name: name, value: parsedValue, category: category
+						}
+					);
+				}
+				match = extractValue.exec(value);
+			}
+			return spectra;
+		}
 
-            //get an inchi
-            else if(match[1].toLowerCase() == 'inchi' || match[1].toLowerCase() == 'inchicode' || match[1].toLowerCase() == 'inchi code') {
-                spectra.inchi = trim(match[2]);
-            }
+		/**
+		 * simple trimming function
+		 */
+		function trim(str) {
+			return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '').replace(/^"(.*)"$/, '$1');
+		}
 
-            //get an inchi from a smile
-            else if(match[1].toLowerCase() == 'smiles' && regexSmiles.exec(match[2])){
-                spectra.smiles = regexSmiles.exec(match[2])[1];
-            }
+		/**
+		 * inspects our metadata fields and does additional modifications, as required
+		 * @param match
+		 * @param spectra
+		 *
+		 *
+		 * @returns {*}
+		 */
+		function inspectFields(match, spectra) {
+			var regexInchIKey = /.*([A-Z]{14}-[A-Z]{10}-[A-Z,0-9])+.*/;
+			//var regexSmiles = /^([^J][0-9BCOHNSOPrIFla@+\-\[\]\(\)\\\/%=#$,.~&!]{6,})$/;
+			var regexSmiles = /^([^J][0-9A-Za-z@+\-\[\]\(\)\\\/%=#$,.~&!]{6,})$/;
 
-            //comment fields have quite often additional infomation in them
-            else if (match[1].toLowerCase() === 'comment') {
-                spectra = handleMetaDataField(match[2], spectra, /(\w+)\s*=\s*([0-9]*\.?[0-9]+)/g);
-            }
+			//if we contain an inchi key in any propterty of this field
+			if (regexInchIKey.exec(match[2])) {
+				spectra.inchiKey = regexInchIKey.exec(match[2])[1];
+			}
 
-            //can contain a lot of different id's in case of massbank generated msp files
-            else if (match[1].toLowerCase() === 'searchid') {
-                spectra = handleMetaDataField(match[2], spectra, /(\w+\s?\w*)+:\s*([\w\d]+[ \w\d-]+)/g, "Database Identifier");
-            }
-            //this mass bank special flag provides some derivatization information
-            else if (match[1].toLowerCase() === 'ms$focused_ion') {
-                spectra = handleMetaDataField(match[2], spectra, /\s*(.+):(.+)/g, "Derivatization");
-            }
-            //any other metadata field
-            else {
-                var name = match[1];
-                var value = match[2];
+			//get an inchi
+			else if (match[1].toLowerCase() == 'inchi' || match[1].toLowerCase() == 'inchicode' || match[1].toLowerCase() == 'inchi code') {
+				spectra.inchi = trim(match[2]);
+			}
 
-                if (ignoreField(name, value) == false) {
-                    //assign metadata
-                    spectra.meta.push(
-                        {
-                            name: name,
-                            value: value,
-                            category: findCategory(name)
-                        }
-                    );
-                }
-            }
+			//get an inchi from a smile
+			else if (match[1].toLowerCase() == 'smiles' && regexSmiles.exec(match[2])) {
+				spectra.smiles = regexSmiles.exec(match[2])[1];
+			}
 
-            return spectra;
-        }
+			//comment fields have quite often additional infomation in them
+			else if (match[1].toLowerCase() === 'comment') {
+				spectra = handleMetaDataField(match[2], spectra, /(\w+)\s*=\s*([0-9]*\.?[0-9]+)/g);
+			}
 
-        /**
-         * finds the related category for the given name, Will be an additional module at a later point TODO
-         * @param name
-         */
-        function findCategory(name) {
-            var name = name.toLocaleLowerCase();
+			//can contain a lot of different id's in case of massbank generated msp files
+			else if (match[1].toLowerCase() === 'searchid') {
+				spectra = handleMetaDataField(match[2], spectra, /(\w+\s?\w*)+:\s*([\w\d]+[ \w\d-]+)/g, "Database Identifier");
+			}
+			//this mass bank special flag provides some derivatization information
+			else if (match[1].toLowerCase() === 'ms$focused_ion') {
+				spectra = handleMetaDataField(match[2], spectra, /\s*(.+):(.+)/g, "Derivatization");
+			}
+			//any other metadata field
+			else {
+				var name = match[1];
+				var value = match[2];
 
-            var category = "none";
-            //masspectral properties
-            if (name === '') {
+				if (ignoreField(name, value) == false) {
+					//assign metadata
+					spectra.meta.push(
+						{
+							name: name,
+							value: value,
+							category: findCategory(name)
+						}
+					);
+				}
+			}
 
-            }
-            else if (name === 'retentionindex' || name === 'retention index' ||
-                    name === 'retentiontime' || name === 'retention time') {
-                category = "spectral properties";
-            }
+			return spectra;
+		}
 
-            //aquisition properties
-            else if (name === 'instrument' || name === 'instrumenttype' || name == 'ionmode' || name == 'precursormz') {
-                category = "acquisition properties";
-            }
+		/**
+		 * finds the related category for the given name, Will be an additional module at a later point TODO
+		 * @param name
+		 */
+		function findCategory(name) {
+			var name = name.toLocaleLowerCase();
 
-            return category
-        }
+			var category = "none";
+			//masspectral properties
+			if (name === '') {
 
-        /**
-         * ignores a given field, if a certain value is not as exspected. Will be an additional module at a later point TODO
-         * @param name
-         * @param value
-         * @returns {boolean}
-         */
-        function ignoreField(name, value) {
+			}
+			else if (name === 'retentionindex' || name === 'retention index' ||
+				name === 'retentiontime' || name === 'retention time') {
+				category = "spectral properties";
+			}
 
-            if (trim(name) == '' || trim(value) == '') {
-                return true;
-            }
+			//aquisition properties
+			else if (name === 'instrument' || name === 'instrumenttype' || name == 'ionmode' || name == 'precursormz') {
+				category = "acquisition properties";
+			}
 
-            name = name.toLowerCase();
+			return category
+		}
 
-            if (name == "retentiontime" && value <= 0) {
-                return true;
-            }
-            else if (name == "retentionindex" && value <= 0) {
-                return true;
-            }
-            //if 0, it doesn't count
-            else if ((name === "precursormz" || name === "derivative_mass" || name === 'parent') && value <= 0) {
-                return true;
-            }
-            //we get this over the inchi key
-            else if (name == "formula") {
-                return true;
-            }
-            else if(name == "synon"){
-                return true;
-            }
-            else if(name == "id"){
-                return true
-            }
+		/**
+		 * ignores a given field, if a certain value is not as exspected. Will be an additional module at a later point TODO
+		 * @param name
+		 * @param value
+		 * @returns {boolean}
+		 */
+		function ignoreField(name, value) {
 
-            return false;
-        }
+			if (trim(name) == '' || trim(value) == '') {
+				return true;
+			}
 
-        /**
-         * converts the data using a callback
-         * @param data
-         * @param callback
-         */
-        this.convertWithCallback = function (data, callback) {
+			name = name.toLowerCase();
 
-            $log.debug("starting with parsing new data set...");
+			if (name == "retentiontime" && value <= 0) {
+				return true;
+			}
+			else if (name == "retentionindex" && value <= 0) {
+				return true;
+			}
+			//if 0, it doesn't count
+			else if ((name === "precursormz" || name === "derivative_mass" || name === 'parent') && value <= 0) {
+				return true;
+			}
+			//we get this over the inchi key
+			else if (name == "formula") {
+				return true;
+			}
+			else if (name == "synon") {
+				return true;
+			}
+			else if (name == "id") {
+				return true
+			}
 
-            /**
-             * checks for a complete block of mgf data.
-             * @type {RegExp}
-             */
-            var blockRegEx = /BEGIN IONS([\s\S]*?)END IONS/g;
+			return false;
+		}
 
-            /**
-             * extracts the attributes like 'name' and 'value' from a found line
-             * @type {RegExp}
-             */
-            var regExAttributes = /\s*([^=\s]+)=(.*)\s/g;
+		/**
+		 * converts the data using a callback
+		 * @param data
+		 * @param callback
+		 */
+		this.convertWithCallback = function (data, callback) {
 
-            /**
-             * first block captures meta data
-             * second block caputures spectra including floats
-             * optional third block are identifications of this ion
-             * @type {RegExp}
-             */
-            var regExSpectra = /^((?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)[ \t]((?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)[ \t]*(.+)?$/gm;
+			$log.debug("starting with parsing new data set...");
 
-            /**
-             * is this an accurate mass
-             * @type {RegExp}
-             */
-            var regExAccurateMass = /(\d*\.?\d{3,})/;
+			/**
+			 * checks for a complete block of mgf data.
+			 * @type {RegExp}
+			 */
+			var blockRegEx = /BEGIN IONS([\s\S]*?)END IONS/g;
 
-            var buf = data.toString('utf8');
+			/**
+			 * extracts the attributes like 'name' and 'value' from a found line
+			 * @type {RegExp}
+			 */
+			var regExAttributes = /\s*([^=\s]+)=(.*)\s/g;
 
-            var block, match;
+			/**
+			 * first block captures meta data
+			 * second block caputures spectra including floats
+			 * optional third block are identifications of this ion
+			 * @type {RegExp}
+			 */
+			var regExSpectra = /^((?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)[ \t]((?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)[ \t]*(.+)?$/gm;
 
-            //go over all available blocks
-            while ((block = blockRegEx.exec(buf)) != null) {
-                block = block[1];
+			/**
+			 * is this an accurate mass
+			 * @type {RegExp}
+			 */
+			var regExAccurateMass = /(\d*\.?\d{3,})/;
 
-                //contains the resulting spectrum object
-                var spectrum = {meta: []};
+			var buf = data.toString('utf8');
 
-                //parse attributes and metadata
-                while ((match = regExAttributes.exec(block)) != null) {
-                    if (match[1].toLowerCase() === 'name') {
-                        //in case there are RI encoded we extract this information
-                        spectrum = handleName(match[2], spectrum);
-                    } else {
-                        spectrum = inspectFields(match, spectrum);
-                    }
-                }
+			var block, match;
 
+			//go over all available blocks
+			while ((block = blockRegEx.exec(buf)) != null) {
+				block = block[1];
 
-                //builds the actual spectrum
-                spectrum.accurate = true;
-                var ions = [];
+				//contains the resulting spectrum object
+				var spectrum = {meta: []};
 
-                while ((match = regExSpectra.exec(block)) != null) {
-                    // Convert scientific notation
-                    if (match[1].toLowerCase().indexOf('e') > -1) {
-                        match[1] = parseFloat(match[1]).toString();
-                    }
-                    if (match[2].toLowerCase().indexOf('e') > -1) {
-                        match[2] = parseFloat(match[2]).toString();
-                    }
-
-                    ions.push(match[1] + ":" + match[2]);
-
-                    //used to determine if this is an accurate mass spectrum or not
-                    if (!regExAccurateMass.test(match[1])) {
-                        spectrum.accurate = false;
-                    }
-
-                    //add annotation to metadata if defined
-                    if (angular.isDefined(match[3])) {
-                        spectrum.meta.push({name: trim(match[3]), value: match[1], category: 'annotation'});
-                    }
-                }
-
-                //join ions to create spectrum string
-                spectrum.spectrum = ions.join(' ');
+				//parse attributes and metadata
+				while ((match = regExAttributes.exec(block)) != null) {
+					if (match[1].toLowerCase() === 'name') {
+						//in case there are RI encoded we extract this information
+						spectrum = handleName(match[2], spectrum);
+					} else {
+						spectrum = inspectFields(match, spectrum);
+					}
+				}
 
 
-                //make sure we have at least a spectrum and a name
-                if (spectrum.spectrum != '' && spectrum.name != null) {
-                    callback(spectrum);
-                } else {
-                    $log.warn('invalid spectrum found -> ignored');
-                }
-            }
-        };
+				//builds the actual spectrum
+				spectrum.accurate = true;
+				var ions = [];
 
-        this.convertFromData = function (data, callback) {
-            return this.convertWithCallback(data, callback);
-        };
+				while ((match = regExSpectra.exec(block)) != null) {
+					// Convert scientific notation
+					if (match[1].toLowerCase().indexOf('e') > -1) {
+						match[1] = parseFloat(match[1]).toString();
+					}
+					if (match[2].toLowerCase().indexOf('e') > -1) {
+						match[2] = parseFloat(match[2]).toString();
+					}
 
-        /**
-         * counts the number of mass spectra in this library file
-         * @param data
-         * @returns {number}
-         */
-        this.countSpectra = function(data) {
-            var count = 0;
-            var pos = -1;
+					ions.push(match[1] + ":" + match[2]);
 
-            while((pos = data.indexOf('BEGIN IONS', pos + 1)) != -1) {
-                count++;
-            }
+					//used to determine if this is an accurate mass spectrum or not
+					if (!regExAccurateMass.test(match[1])) {
+						spectrum.accurate = false;
+					}
 
-            return count;
-        };
-    });
+					//add annotation to metadata if defined
+					if (angular.isDefined(match[3])) {
+						spectrum.meta.push({name: trim(match[3]), value: match[1], category: 'annotation'});
+					}
+				}
+
+				//join ions to create spectrum string
+				spectrum.spectrum = ions.join(' ');
+
+
+				//make sure we have at least a spectrum and a name
+				if (spectrum.spectrum != '' && spectrum.name != null) {
+					callback(spectrum);
+				} else {
+					$log.warn('invalid spectrum found -> ignored');
+				}
+			}
+		};
+
+		this.convertFromData = function (data, callback) {
+			return this.convertWithCallback(data, callback);
+		};
+
+		/**
+		 * counts the number of mass spectra in this library file
+		 * @param data
+		 * @returns {number}
+		 */
+		this.countSpectra = function (data) {
+			var count = 0;
+			var pos = -1;
+
+			while ((pos = data.indexOf('BEGIN IONS', pos + 1)) != -1) {
+				count++;
+			}
+
+			return count;
+		};
+	}
+
+})();
