@@ -31,10 +31,15 @@ describe('gwMgfService test', function () {
 
                 expect(data.meta.length).toBeGreaterThan(0);
                 expect(metadataNames.indexOf('INSTRUMENT')).toBeGreaterThan(-1);
-                expect(metadataNames.indexOf('INCHI')).toBeGreaterThan(-1);
-                expect(metadataNames.indexOf('SMILES')).toBeGreaterThan(-1);
                 expect(metadataNames.indexOf('MSLEVEL')).toBeGreaterThan(-1);
                 expect(metadataNames.indexOf('FILENAME')).toBeGreaterThan(-1);
+
+
+                expect(metadataNames.indexOf('INCHI')).toEqual(-1);
+                expect(metadataNames.indexOf('SMILES')).toEqual(-1);
+                expect(data.inchi).toEqual('N/A');
+                expect(data.smiles).toEqual('C[C@@H](C1[C@@H](O)CC2C3C=CC4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C)[C@@H]5CCCCN5');
+
                 expect(data.spectrum).toBeDefined();
             });
         }));
