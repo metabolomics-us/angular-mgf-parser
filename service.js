@@ -26,21 +26,19 @@
 			//check if we have a Retention Index in the name field
 			var nameMatch = /(.+)_RI(.*)/.exec(value);
 			var nameCombinedWithInstruments = /\s*([:\w\d\s-]+);/.exec(value);
+
 			if (nameMatch) {
 				//sets the new name
-				spectra.name = trim(nameMatch[1]);
+				spectra.names.push(trim(nameMatch[1]));
 
 				//adds it as retention index
 				spectra.meta.push(
 					{name: 'Retention Index', value: trim(nameMatch[2]), category: findCategory('Retention Index')}
 				)
-			}
-			else if (nameCombinedWithInstruments) {
-				spectra.name = trim(nameCombinedWithInstruments[1]);
-			}
-			else {
-
-				spectra.name = trim(value);
+			} else if (nameCombinedWithInstruments) {
+				spectra.names.push(trim(nameCombinedWithInstruments[1]));
+			} else {
+				spectra.name.push(trim(value));
 			}
 
 			return spectra
@@ -58,13 +56,14 @@
 			if (angular.isUndefined(category)) {
 				category = "none"
 			}
+
 			var extractValue = regex;
 			var match = extractValue.exec(value);
 
 			while (match != null) {
-
 				var name = trim(match[1]);
 				var parsedValue = trim(match[2]);
+
 				if (ignoreField(name, parsedValue) == false) {
 					spectra.meta.push(
 						{
@@ -153,10 +152,12 @@
 			var name = name.toLocaleLowerCase();
 
 			var category = "none";
+
 			//masspectral properties
 			if (name === '') {
 
 			}
+
 			else if (name === 'retentionindex' || name === 'retention index' ||
 				name === 'retentiontime' || name === 'retention time') {
 				category = "spectral properties";
@@ -252,7 +253,7 @@
 				block = block[1];
 
 				//contains the resulting spectrum object
-				var spectrum = {meta: []};
+				var spectrum = {meta: [], names: []};
 
 				//parse attributes and metadata
 				while ((match = regExAttributes.exec(block)) != null) {
@@ -295,8 +296,11 @@
 				spectrum.spectrum = ions.join(' ');
 
 
+				console.log(spectrum)
+
+
 				//make sure we have at least a spectrum and a name
-				if (spectrum.spectrum != '' && spectrum.name != null) {
+				if (spectrum.spectrum != '') {
 					callback(spectrum);
 				} else {
 					$log.warn('invalid spectrum found -> ignored');
